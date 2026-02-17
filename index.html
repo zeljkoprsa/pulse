@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PLC — The Pulse of Civilization</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -13,9 +13,9 @@
     --pulse-core: #ff3a2f;
     --pulse-mid: #ff6b35;
     --pulse-outer: #1a3a5c;
-    --grid-line: rgba(255, 58, 47, 0.06);
     --text-primary: #e8e4df;
-    --text-secondary: rgba(232, 228, 223, 0.5);
+    --text-secondary: rgba(232, 228, 223, 0.45);
+    --text-dim: rgba(232, 228, 223, 0.2);
     --bg: #07080a;
   }
 
@@ -25,156 +25,291 @@
     color: var(--text-primary);
     font-family: 'IBM Plex Mono', monospace;
     overflow: hidden;
-    cursor: crosshair;
   }
 
-  canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
+  canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
 
   .overlay {
-    position: fixed;
-    top: 0; left: 0;
+    position: fixed; top: 0; left: 0;
     width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 10;
+    pointer-events: none; z-index: 10;
   }
 
   .title-block {
-    position: absolute;
-    bottom: 80px;
-    left: 60px;
+    position: absolute; bottom: 80px; left: 60px;
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .title-block h1 {
     font-family: 'Instrument Serif', serif;
     font-size: clamp(42px, 6vw, 96px);
-    font-weight: 400;
-    line-height: 0.95;
+    font-weight: 400; line-height: 0.95;
     letter-spacing: -0.03em;
     color: var(--text-primary);
     opacity: 0;
     animation: fadeUp 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
   }
 
-  .title-block h1 em {
-    font-style: italic;
-    color: var(--pulse-core);
-  }
+  .title-block h1 em { font-style: italic; color: var(--pulse-core); }
 
   .subtitle {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin-top: 20px;
+    font-size: 11px; font-weight: 300;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--text-secondary); margin-top: 20px;
     opacity: 0;
     animation: fadeUp 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
   }
 
   .corner-label {
-    position: absolute;
-    font-size: 10px;
-    font-weight: 400;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
+    position: absolute; font-size: 10px; font-weight: 400;
+    letter-spacing: 0.2em; text-transform: uppercase;
     color: var(--text-secondary);
   }
-
   .corner-label.tl { top: 30px; left: 60px; }
-  .corner-label.tr { top: 30px; right: 60px; }
-  .corner-label.br { bottom: 30px; right: 60px; }
 
   .scan-counter {
-    position: absolute;
-    top: 30px;
-    right: 60px;
-    font-size: 10px;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    color: var(--text-secondary);
+    position: absolute; top: 30px; right: 60px;
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 0.15em; color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
   }
 
+  /* Industry ring labels (right side) */
   .industry-labels {
-    position: absolute;
-    top: 50%;
-    right: 60px;
+    position: absolute; top: 50%; right: 60px;
     transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    display: flex; flex-direction: column; gap: 6px;
     opacity: 0;
     animation: fadeUp 1.8s cubic-bezier(0.16, 1, 0.3, 1) 1.4s forwards;
+    pointer-events: auto;
   }
 
   .industry-label {
-    font-size: 9px;
-    font-weight: 300;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    text-align: right;
-    transition: color 0.6s ease, transform 0.6s ease;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
+    font-size: 9px; font-weight: 300;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-secondary); text-align: right;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; align-items: center;
+    justify-content: flex-end; gap: 8px;
+    cursor: pointer; padding: 6px 0;
+    user-select: none;
   }
 
   .industry-label .dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
+    width: 4px; height: 4px; border-radius: 50%;
     background: var(--text-secondary);
-    transition: all 0.6s ease;
-    flex-shrink: 0;
+    transition: all 0.5s ease; flex-shrink: 0;
+  }
+
+  .industry-label:hover {
+    color: var(--text-primary);
+    transform: translateX(-6px);
+  }
+
+  .industry-label:hover .dot {
+    background: var(--pulse-core);
+    box-shadow: 0 0 10px var(--pulse-core);
   }
 
   .industry-label.active {
     color: var(--pulse-core);
     transform: translateX(-4px);
   }
-
   .industry-label.active .dot {
     background: var(--pulse-core);
     box-shadow: 0 0 8px var(--pulse-core);
   }
 
+  /* Dimmed state when detail panel is open */
+  body.detail-open .industry-label:not(.selected) {
+    opacity: 0.25;
+  }
+  body.detail-open .title-block {
+    opacity: 0.15;
+    transform: translateY(20px);
+  }
+  body.detail-open .ladder-hint { opacity: 0 !important; }
+
+  .industry-label.selected {
+    color: var(--pulse-core) !important;
+    font-weight: 500;
+    transform: translateX(-10px);
+  }
+  .industry-label.selected .dot {
+    width: 6px; height: 6px;
+    background: var(--pulse-core);
+    box-shadow: 0 0 14px var(--pulse-core);
+  }
+
+  /* === DETAIL PANEL === */
+  .detail-panel {
+    position: fixed;
+    left: 60px; top: 50%;
+    transform: translateY(-50%);
+    width: min(480px, 40vw);
+    pointer-events: auto;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 20;
+  }
+
+  .detail-panel.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .detail-close {
+    position: absolute; top: -30px; left: 0;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-secondary);
+    cursor: pointer; background: none; border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    transition: color 0.3s;
+    padding: 4px 0;
+  }
+  .detail-close:hover { color: var(--pulse-core); }
+
+  .detail-sector-name {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 400; line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+  }
+  .detail-panel.open .detail-sector-name {
+    opacity: 1; transform: translateY(0);
+  }
+
+  .detail-description {
+    font-size: 13px; font-weight: 300;
+    line-height: 1.7; color: var(--text-secondary);
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+  }
+  .detail-panel.open .detail-description {
+    opacity: 1; transform: translateY(0);
+  }
+
+  .detail-stats {
+    display: flex; gap: 32px; flex-wrap: wrap;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+  }
+  .detail-panel.open .detail-stats {
+    opacity: 1; transform: translateY(0);
+  }
+
+  .detail-stat {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .detail-stat-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 36px; font-weight: 400;
+    color: var(--pulse-core);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .detail-stat-label {
+    font-size: 9px; font-weight: 300;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--text-dim);
+    max-width: 120px;
+  }
+
+  .detail-dependencies {
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s;
+  }
+  .detail-panel.open .detail-dependencies {
+    opacity: 1; transform: translateY(0);
+  }
+
+  .detail-dep-title {
+    font-size: 9px; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .detail-dep-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .detail-dep-item {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .dep-bar-track {
+    width: 100px; height: 2px;
+    background: rgba(255, 58, 47, 0.08);
+    border-radius: 1px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .dep-bar-fill {
+    height: 100%;
+    background: var(--pulse-core);
+    border-radius: 1px;
+    width: 0%;
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.6s;
+  }
+
+  .detail-panel.open .dep-bar-fill {
+    /* width set via JS */
+  }
+
+  .dep-label {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .dep-value {
+    font-size: 10px; font-weight: 400;
+    color: var(--pulse-core);
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   .ladder-hint {
-    position: absolute;
-    bottom: 30px;
-    left: 60px;
-    font-size: 9px;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
+    position: absolute; bottom: 30px; left: 60px;
+    font-size: 9px; font-weight: 300;
+    letter-spacing: 0.15em; text-transform: uppercase;
     color: rgba(255, 58, 47, 0.3);
     opacity: 0;
     animation: fadeUp 1.8s cubic-bezier(0.16, 1, 0.3, 1) 2s forwards;
+    transition: opacity 0.5s;
+  }
+
+  .scan-line {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--pulse-core), transparent);
+    opacity: 0.06;
+    animation: scanDown 4s linear infinite;
+    pointer-events: none; z-index: 5;
   }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
-
-  /* Scan line effect */
-  .scan-line {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--pulse-core), transparent);
-    opacity: 0.08;
-    animation: scanDown 4s linear infinite;
-    pointer-events: none;
-    z-index: 5;
-  }
-
   @keyframes scanDown {
     from { transform: translateY(-2px); }
     to { transform: translateY(100vh); }
@@ -184,7 +319,6 @@
 <body>
 
 <canvas id="canvas"></canvas>
-
 <div class="scan-line"></div>
 
 <div class="overlay">
@@ -197,47 +331,197 @@
   </div>
 
   <div class="industry-labels" id="industryLabels">
-    <div class="industry-label" data-ring="1"><span>Energy Grid</span><span class="dot"></span></div>
-    <div class="industry-label" data-ring="2"><span>Water Treatment</span><span class="dot"></span></div>
-    <div class="industry-label" data-ring="3"><span>Manufacturing</span><span class="dot"></span></div>
-    <div class="industry-label" data-ring="4"><span>Oil & Gas</span><span class="dot"></span></div>
-    <div class="industry-label" data-ring="5"><span>Transport</span><span class="dot"></span></div>
-    <div class="industry-label" data-ring="6"><span>Building Systems</span><span class="dot"></span></div>
-    <div class="industry-label" data-ring="7"><span>Pharma</span><span class="dot"></span></div>
-    <div class="industry-label" data-ring="8"><span>Food & Beverage</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="0" onclick="openSector(0)"><span>Energy Grid</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="1" onclick="openSector(1)"><span>Water & Utilities</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="2" onclick="openSector(2)"><span>Manufacturing</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="3" onclick="openSector(3)"><span>Oil & Gas</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="4" onclick="openSector(4)"><span>Transport & Logistics</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="5" onclick="openSector(5)"><span>Building Automation</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="6" onclick="openSector(6)"><span>Pharma & Life Sciences</span><span class="dot"></span></div>
+    <div class="industry-label" data-ring="7" onclick="openSector(7)"><span>Food & Beverage</span><span class="dot"></span></div>
   </div>
 
-  <div class="ladder-hint">← Click anywhere to trigger a scan cycle →</div>
+  <div class="ladder-hint">Click a sector to explore PLC dependency →</div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" onclick="closeSector()">← Back to overview</button>
+  <div class="detail-sector-name" id="detailName"></div>
+  <div class="detail-description" id="detailDesc"></div>
+  <div class="detail-stats" id="detailStats"></div>
+  <div class="detail-dependencies" id="detailDeps">
+    <div class="detail-dep-title">PLC Control Points</div>
+    <div class="detail-dep-list" id="detailDepList"></div>
+  </div>
 </div>
 
 <script>
-// === CONFIGURATION ===
-const CONFIG = {
-  particleCount: 6000,
-  ringCount: 8,
-  pulseSpeed: 0.003,
-  coreRadius: 30,
-  ringSpacing: 55,
-  particleBaseSize: 1.2,
-  networkLineOpacity: 0.08,
-  colors: {
-    core: [255, 58, 47],
-    mid: [255, 107, 53],
-    outer: [26, 58, 92],
-    cool: [40, 100, 180],
-  }
-};
+// === SECTOR DATA ===
+const SECTORS = [
+  {
+    name: 'Energy Grid',
+    description: 'Every watt that reaches your home passes through PLC-controlled substations, load balancers, and switchgear. A single scan cycle decides whether 140 million households stay lit.',
+    stats: [
+      { value: '99.97%', label: 'Grid uptime target' },
+      { value: '~7,300', label: 'Substations in US alone' },
+      { value: '<10ms', label: 'PLC response time' },
+    ],
+    dependencies: [
+      { label: 'Substation switching', value: 98 },
+      { label: 'Load frequency control', value: 94 },
+      { label: 'Fault isolation', value: 97 },
+      { label: 'Renewable integration', value: 86 },
+      { label: 'Grid synchronization', value: 92 },
+    ],
+    color: [255, 58, 47],
+  },
+  {
+    name: 'Water & Utilities',
+    description: 'From reservoir to tap — PLCs govern every pump, valve, and chemical dosing point. 2.2 billion people depend on treatment systems where a single logic error means contamination.',
+    stats: [
+      { value: '155k', label: 'Water systems in US' },
+      { value: '24/7', label: 'Continuous PLC monitoring' },
+      { value: '0.001', label: 'PPM chlorine precision' },
+    ],
+    dependencies: [
+      { label: 'Pump station control', value: 96 },
+      { label: 'Chemical dosing', value: 99 },
+      { label: 'Pressure regulation', value: 93 },
+      { label: 'Filtration sequencing', value: 95 },
+      { label: 'SCADA telemetry', value: 88 },
+    ],
+    color: [40, 140, 220],
+  },
+  {
+    name: 'Manufacturing',
+    description: 'Every car, chip, and consumer good is assembled by machines orchestrated by PLCs. The factory floor speaks ladder logic — 15 million PLCs run the world\'s production lines.',
+    stats: [
+      { value: '15M+', label: 'Active PLCs worldwide' },
+      { value: '$13T', label: 'Global manufacturing output' },
+      { value: '1ms', label: 'Servo loop precision' },
+    ],
+    dependencies: [
+      { label: 'Motion control', value: 97 },
+      { label: 'Assembly sequencing', value: 95 },
+      { label: 'Quality inspection triggers', value: 89 },
+      { label: 'Conveyor synchronization', value: 94 },
+      { label: 'Safety interlocks', value: 99 },
+    ],
+    color: [255, 107, 53],
+  },
+  {
+    name: 'Oil & Gas',
+    description: 'From wellhead to refinery, PLCs manage the most hazardous processes humans have ever built. A single rung of logic can prevent a $10B disaster — or cause one.',
+    stats: [
+      { value: 'SIL 3', label: 'Safety integrity level' },
+      { value: '650k', label: 'Miles of US pipelines' },
+      { value: '4,000+', label: 'Control loops per refinery' },
+    ],
+    dependencies: [
+      { label: 'Emergency shutdown systems', value: 99 },
+      { label: 'Pipeline SCADA', value: 96 },
+      { label: 'Compressor control', value: 94 },
+      { label: 'Flare management', value: 91 },
+      { label: 'Custody transfer metering', value: 97 },
+    ],
+    color: [200, 60, 40],
+  },
+  {
+    name: 'Transport & Logistics',
+    description: 'Traffic lights, rail switches, port cranes, baggage systems — PLCs move 8 billion people and $19T in goods every year. The invisible choreographer of global movement.',
+    stats: [
+      { value: '8B', label: 'People moved annually' },
+      { value: '$19T', label: 'Global logistics value' },
+      { value: '300k+', label: 'Traffic intersections (US)' },
+    ],
+    dependencies: [
+      { label: 'Traffic signal control', value: 92 },
+      { label: 'Rail interlocking', value: 98 },
+      { label: 'Port crane automation', value: 94 },
+      { label: 'Baggage handling', value: 90 },
+      { label: 'Conveyor & sortation', value: 96 },
+    ],
+    color: [100, 180, 255],
+  },
+  {
+    name: 'Building Automation',
+    description: 'The air you breathe, the elevator you ride, the data center keeping the internet alive — all PLC-governed. Modern buildings are machines, and PLCs are their operating system.',
+    stats: [
+      { value: '40%', label: 'Of global energy use' },
+      { value: '5.9M', label: 'Commercial buildings (US)' },
+      { value: '30%', label: 'Energy saved via BAS' },
+    ],
+    dependencies: [
+      { label: 'HVAC sequencing', value: 94 },
+      { label: 'Elevator dispatching', value: 91 },
+      { label: 'Fire & life safety', value: 98 },
+      { label: 'Lighting control', value: 85 },
+      { label: 'Data center cooling', value: 97 },
+    ],
+    color: [140, 100, 220],
+  },
+  {
+    name: 'Pharma & Life Sciences',
+    description: 'Every vaccine, every pill — manufactured under PLC-enforced precision. Batch processes run to FDA-validated logic where a single deviation scraps a $50M production run.',
+    stats: [
+      { value: '$1.48T', label: 'Global pharma market' },
+      { value: '21 CFR', label: 'FDA compliance standard' },
+      { value: '±0.1°C', label: 'Temperature control' },
+    ],
+    dependencies: [
+      { label: 'Batch process control', value: 97 },
+      { label: 'Clean-in-place (CIP)', value: 95 },
+      { label: 'Environmental monitoring', value: 93 },
+      { label: 'Serialization & track-trace', value: 88 },
+      { label: 'Lyophilization control', value: 96 },
+    ],
+    color: [50, 200, 150],
+  },
+  {
+    name: 'Food & Beverage',
+    description: 'From grain silo to grocery shelf — PLCs ensure every bottle is filled, every oven is timed, every package is sealed. Feeding 8 billion people requires 8 billion perfect scan cycles.',
+    stats: [
+      { value: '$8.9T', label: 'Global food industry' },
+      { value: '1,200', label: 'Avg I/O points per line' },
+      { value: '99.5%', label: 'Fill accuracy target' },
+    ],
+    dependencies: [
+      { label: 'Filling & dosing', value: 96 },
+      { label: 'Pasteurization control', value: 98 },
+      { label: 'Packaging line sync', value: 93 },
+      { label: 'Cold chain monitoring', value: 91 },
+      { label: 'Recipe management', value: 94 },
+    ],
+    color: [220, 170, 40],
+  },
+];
 
 // === CANVAS SETUP ===
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 let W, H, cx, cy;
 let scanCount = 0;
-let mouseX = 0, mouseY = 0;
 let time = 0;
 let pulses = [];
 let particles = [];
 let networkNodes = [];
+
+// View state
+let activeSector = -1;
+let viewState = 'overview'; // 'overview' | 'zooming' | 'detail'
+let zoomProgress = 0;
+let targetZoom = 0;
+let focusRing = -1;
+
+const CONFIG = {
+  particleCount: 5000,
+  ringCount: 8,
+  coreRadius: 30,
+  ringSpacing: 50,
+  particleBaseSize: 1.2,
+  networkLineOpacity: 0.07,
+};
 
 function resize() {
   W = canvas.width = window.innerWidth * devicePixelRatio;
@@ -246,7 +530,6 @@ function resize() {
   cy = H / 2;
   canvas.style.width = window.innerWidth + 'px';
   canvas.style.height = window.innerHeight + 'px';
-  ctx.scale(1, 1);
   initParticles();
   initNetworkNodes();
 }
@@ -262,23 +545,18 @@ function initParticles() {
     const r = baseRadius + (Math.random() - 0.5) * spread;
 
     particles.push({
-      ring,
-      baseAngle: angle,
-      angle,
-      baseRadius: r,
-      radius: r,
+      ring, baseAngle: angle, angle,
+      baseRadius: r, radius: r,
       size: CONFIG.particleBaseSize * (0.5 + Math.random() * 1.0),
       speed: (0.0002 + Math.random() * 0.0006) * (ring % 2 === 0 ? 1 : -1),
-      brightness: 0.2 + Math.random() * 0.3,
+      brightness: 0.15 + Math.random() * 0.25,
       activeBrightness: 0,
       phase: Math.random() * Math.PI * 2,
-      // Slight vertical offset for 3D illusion
-      yOffset: (Math.random() - 0.5) * 30 * (1 + ring * 0.3),
+      yOffset: (Math.random() - 0.5) * 25 * (1 + ring * 0.3),
     });
   }
 }
 
-// === NETWORK NODES (the "wiring" between rings) ===
 function initNetworkNodes() {
   networkNodes = [];
   for (let ring = 0; ring < CONFIG.ringCount; ring++) {
@@ -291,86 +569,193 @@ function initNetworkNodes() {
   }
 }
 
-// === PULSE SYSTEM ===
+// === PULSE ===
 function triggerPulse(x, y) {
   scanCount++;
-  document.getElementById('scanCounter').textContent =
-    `SCAN CYCLE ${String(scanCount).padStart(6, '0')}`;
-
+  document.getElementById('scanCounter').textContent = `SCAN CYCLE ${String(scanCount).padStart(6, '0')}`;
   pulses.push({
-    x: x * devicePixelRatio,
-    y: y * devicePixelRatio,
-    radius: 0,
-    maxRadius: Math.max(W, H) * 0.8,
-    speed: 3.5,
-    life: 1.0,
-    born: time,
+    x: x * devicePixelRatio, y: y * devicePixelRatio,
+    radius: 0, maxRadius: Math.max(W, H) * 0.8,
+    speed: 3.2, life: 1.0, born: time,
   });
 }
 
-// Auto-pulse on load
 setTimeout(() => triggerPulse(window.innerWidth / 2, window.innerHeight / 2), 800);
 setInterval(() => {
-  if (pulses.length < 2) {
+  if (pulses.length < 2 && viewState === 'overview') {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 50 + Math.random() * 100;
+    const dist = 30 + Math.random() * 80;
     triggerPulse(
       window.innerWidth / 2 + Math.cos(angle) * dist,
       window.innerHeight / 2 + Math.sin(angle) * dist
     );
   }
-}, 3500);
+}, 4000);
 
-// === DRAWING HELPERS ===
+// === SECTOR OPEN/CLOSE ===
+function openSector(index) {
+  if (activeSector === index) { closeSector(); return; }
+
+  activeSector = index;
+  focusRing = index;
+  viewState = 'zooming';
+  targetZoom = 1;
+  document.body.classList.add('detail-open');
+
+  // Mark selected label
+  document.querySelectorAll('.industry-label').forEach((el, i) => {
+    el.classList.toggle('selected', i === index);
+  });
+
+  // Populate detail panel
+  const sector = SECTORS[index];
+  document.getElementById('detailName').textContent = sector.name;
+  document.getElementById('detailDesc').textContent = sector.description;
+
+  const statsHtml = sector.stats.map(s =>
+    `<div class="detail-stat">
+      <div class="detail-stat-value">${s.value}</div>
+      <div class="detail-stat-label">${s.label}</div>
+    </div>`
+  ).join('');
+  document.getElementById('detailStats').innerHTML = statsHtml;
+
+  const depsHtml = sector.dependencies.map(d =>
+    `<div class="detail-dep-item">
+      <div class="dep-bar-track"><div class="dep-bar-fill" style="width: 0%;" data-target="${d.value}"></div></div>
+      <span class="dep-label">${d.label}</span>
+      <span class="dep-value">${d.value}%</span>
+    </div>`
+  ).join('');
+  document.getElementById('detailDepList').innerHTML = depsHtml;
+
+  // Open panel
+  const panel = document.getElementById('detailPanel');
+  panel.classList.add('open');
+
+  // Trigger pulse from the ring
+  const ringRadius = CONFIG.coreRadius + index * CONFIG.ringSpacing;
+  const screenRingR = ringRadius / devicePixelRatio;
+  triggerPulse(window.innerWidth / 2 + screenRingR * 0.5, window.innerHeight / 2);
+
+  // Animate dep bars after a delay
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      panel.querySelectorAll('.dep-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.target + '%';
+      });
+    }, 100);
+  });
+}
+
+function closeSector() {
+  activeSector = -1;
+  focusRing = -1;
+  viewState = 'overview';
+  targetZoom = 0;
+  document.body.classList.remove('detail-open');
+  document.querySelectorAll('.industry-label').forEach(el => el.classList.remove('selected'));
+  document.getElementById('detailPanel').classList.remove('open');
+
+  // Reset bar widths for next open
+  document.querySelectorAll('.dep-bar-fill').forEach(bar => bar.style.width = '0%');
+}
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && activeSector >= 0) closeSector();
+});
+
+// Click canvas to pulse (only in overview)
+canvas.addEventListener('click', (e) => {
+  if (viewState === 'overview') triggerPulse(e.clientX, e.clientY);
+});
+
+// === COLOR HELPERS ===
 function lerpColor(c1, c2, t) {
-  return [
-    c1[0] + (c2[0] - c1[0]) * t,
-    c1[1] + (c2[1] - c1[1]) * t,
-    c1[2] + (c2[2] - c1[2]) * t,
-  ];
+  return [c1[0]+(c2[0]-c1[0])*t, c1[1]+(c2[1]-c1[1])*t, c1[2]+(c2[2]-c1[2])*t];
 }
 
 function getRingColor(ring, activation) {
+  if (focusRing >= 0) {
+    const sector = SECTORS[focusRing];
+    if (ring === focusRing) {
+      return lerpColor([80, 80, 80], sector.color, 0.6 + activation * 0.4);
+    }
+    // Non-focus rings are dimmed
+    const dimFactor = 0.2 + activation * 0.3;
+    return [60 * dimFactor, 60 * dimFactor, 80 * dimFactor];
+  }
+  const core = [255, 58, 47];
+  const cool = [40, 80, 160];
+  const mid = [255, 107, 53];
   const ringT = ring / (CONFIG.ringCount - 1);
-  const baseColor = lerpColor(CONFIG.colors.core, CONFIG.colors.cool, ringT);
-  const activeColor = lerpColor(CONFIG.colors.core, CONFIG.colors.mid, ringT * 0.5);
-  return lerpColor(baseColor, activeColor, activation);
+  const base = lerpColor(core, cool, ringT);
+  const active = lerpColor(core, mid, ringT * 0.5);
+  return lerpColor(base, active, activation);
 }
 
-// === DRAW RINGS (subtle orbital guides) ===
+// === DRAW FUNCTIONS ===
 function drawRings() {
   for (let ring = 0; ring < CONFIG.ringCount; ring++) {
     const r = CONFIG.coreRadius + ring * CONFIG.ringSpacing;
-    const ringT = ring / (CONFIG.ringCount - 1);
+    const isFocus = ring === focusRing;
+    const alpha = isFocus ? 0.12 : (focusRing >= 0 ? 0.015 : 0.025);
 
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 58, 47, ${0.02 + ringT * 0.01})`;
-    ctx.lineWidth = 0.5;
+
+    if (isFocus) {
+      const col = SECTORS[ring].color;
+      ctx.strokeStyle = `rgba(${col[0]}, ${col[1]}, ${col[2]}, ${alpha})`;
+      ctx.lineWidth = 1.5;
+    } else {
+      ctx.strokeStyle = `rgba(255, 58, 47, ${alpha})`;
+      ctx.lineWidth = 0.5;
+    }
     ctx.stroke();
+
+    // Focus ring glow
+    if (isFocus && zoomProgress > 0.5) {
+      const glowAlpha = (zoomProgress - 0.5) * 0.06;
+      const col = SECTORS[ring].color;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${col[0]}, ${col[1]}, ${col[2]}, ${glowAlpha})`;
+      ctx.lineWidth = 6;
+      ctx.stroke();
+    }
   }
 }
 
-// === DRAW NETWORK LINES ===
 function drawNetwork() {
   for (let i = 0; i < networkNodes.length; i++) {
     const n = networkNodes[i];
-    const x1 = cx + Math.cos(n.angle + time * 0.0003 * (n.ring % 2 === 0 ? 1 : -1)) * n.radius;
-    const y1 = cy + Math.sin(n.angle + time * 0.0003 * (n.ring % 2 === 0 ? 1 : -1)) * n.radius;
+    const dir = n.ring % 2 === 0 ? 1 : -1;
+    const x1 = cx + Math.cos(n.angle + time * 0.0003 * dir) * n.radius;
+    const y1 = cy + Math.sin(n.angle + time * 0.0003 * dir) * n.radius;
 
-    // Connect to nearby nodes in adjacent rings
     for (let j = i + 1; j < networkNodes.length; j++) {
       const m = networkNodes[j];
       if (Math.abs(m.ring - n.ring) !== 1) continue;
 
-      const x2 = cx + Math.cos(m.angle + time * 0.0003 * (m.ring % 2 === 0 ? 1 : -1)) * m.radius;
-      const y2 = cy + Math.sin(m.angle + time * 0.0003 * (m.ring % 2 === 0 ? 1 : -1)) * m.radius;
+      const dir2 = m.ring % 2 === 0 ? 1 : -1;
+      const x2 = cx + Math.cos(m.angle + time * 0.0003 * dir2) * m.radius;
+      const y2 = cy + Math.sin(m.angle + time * 0.0003 * dir2) * m.radius;
 
       const dist = Math.hypot(x2 - x1, y2 - y1);
       if (dist < CONFIG.ringSpacing * 1.8) {
         const activation = Math.max(n.active, m.active);
-        const alpha = CONFIG.networkLineOpacity + activation * 0.15;
-        const color = getRingColor(Math.min(n.ring, m.ring), activation);
+        const minRing = Math.min(n.ring, m.ring);
+
+        // Dim non-focus connections
+        let dimMul = 1;
+        if (focusRing >= 0 && minRing !== focusRing && Math.max(n.ring, m.ring) !== focusRing) {
+          dimMul = 0.15;
+        }
+
+        const alpha = (CONFIG.networkLineOpacity + activation * 0.15) * dimMul;
+        const color = getRingColor(minRing, activation);
 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
@@ -383,13 +768,13 @@ function drawNetwork() {
   }
 }
 
-// === DRAW CORE ===
 function drawCore() {
-  // Glowing core
+  const coreDim = focusRing >= 0 ? 0.4 : 1;
+
   const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, CONFIG.coreRadius * 2.5);
-  gradient.addColorStop(0, `rgba(255, 58, 47, 0.4)`);
-  gradient.addColorStop(0.3, `rgba(255, 58, 47, 0.1)`);
-  gradient.addColorStop(0.6, `rgba(255, 58, 47, 0.02)`);
+  gradient.addColorStop(0, `rgba(255, 58, 47, ${0.35 * coreDim})`);
+  gradient.addColorStop(0.3, `rgba(255, 58, 47, ${0.08 * coreDim})`);
+  gradient.addColorStop(0.6, `rgba(255, 58, 47, ${0.015 * coreDim})`);
   gradient.addColorStop(1, `rgba(255, 58, 47, 0)`);
 
   ctx.beginPath();
@@ -397,39 +782,24 @@ function drawCore() {
   ctx.fillStyle = gradient;
   ctx.fill();
 
-  // Inner bright core
-  const innerGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, CONFIG.coreRadius * 0.8);
-  innerGrad.addColorStop(0, `rgba(255, 120, 80, 0.9)`);
-  innerGrad.addColorStop(0.5, `rgba(255, 58, 47, 0.3)`);
-  innerGrad.addColorStop(1, `rgba(255, 58, 47, 0)`);
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, CONFIG.coreRadius * 0.8, 0, Math.PI * 2);
-  ctx.fillStyle = innerGrad;
-  ctx.fill();
-
-  // Pulsing core dot
   const pulse = 0.8 + Math.sin(time * 0.005) * 0.2;
   ctx.beginPath();
   ctx.arc(cx, cy, 3 * pulse, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(255, 200, 180, ${pulse})`;
+  ctx.fillStyle = `rgba(255, 200, 180, ${pulse * coreDim})`;
   ctx.fill();
 }
 
-// === DRAW PARTICLES ===
 function drawParticles() {
   for (const p of particles) {
     p.angle += p.speed;
     p.activeBrightness *= 0.97;
 
-    // Check pulse activation
     for (const pulse of pulses) {
       const px = cx + Math.cos(p.angle) * p.radius;
       const py = cy + Math.sin(p.angle) * p.radius + p.yOffset;
       const dist = Math.hypot(px - pulse.x, py - pulse.y);
-      const pulseDist = Math.abs(dist - pulse.radius);
-      if (pulseDist < 40) {
-        p.activeBrightness = Math.min(1, p.activeBrightness + 0.5 * pulse.life);
+      if (Math.abs(dist - pulse.radius) < 35) {
+        p.activeBrightness = Math.min(1, p.activeBrightness + 0.4 * pulse.life);
       }
     }
 
@@ -437,15 +807,22 @@ function drawParticles() {
     const x = cx + Math.cos(p.angle) * (p.radius + wobble);
     const y = cy + Math.sin(p.angle) * (p.radius + wobble) + p.yOffset;
 
-    const brightness = p.brightness + p.activeBrightness * 0.7;
+    // Focus dimming for non-selected rings
+    let dimMul = 1;
+    if (focusRing >= 0 && p.ring !== focusRing) {
+      dimMul = 0.12;
+    } else if (focusRing >= 0 && p.ring === focusRing) {
+      dimMul = 1.4;
+    }
+
+    const brightness = (p.brightness + p.activeBrightness * 0.7) * dimMul;
     const color = getRingColor(p.ring, p.activeBrightness);
     const size = p.size * (1 + p.activeBrightness * 2);
 
-    // Glow for active particles
     if (p.activeBrightness > 0.1) {
       ctx.beginPath();
       ctx.arc(x, y, size * 4, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${color[0]|0}, ${color[1]|0}, ${color[2]|0}, ${p.activeBrightness * 0.15})`;
+      ctx.fillStyle = `rgba(${color[0]|0}, ${color[1]|0}, ${color[2]|0}, ${p.activeBrightness * 0.12 * dimMul})`;
       ctx.fill();
     }
 
@@ -456,85 +833,80 @@ function drawParticles() {
   }
 }
 
-// === DRAW PULSES ===
 function drawPulses() {
   for (let i = pulses.length - 1; i >= 0; i--) {
     const p = pulses[i];
     p.radius += p.speed;
     p.life = Math.max(0, 1 - p.radius / p.maxRadius);
 
-    if (p.life <= 0) {
-      pulses.splice(i, 1);
-      continue;
-    }
+    if (p.life <= 0) { pulses.splice(i, 1); continue; }
 
     // Update industry labels
-    const screenRadius = p.radius / devicePixelRatio;
-    const labels = document.querySelectorAll('.industry-label');
-    labels.forEach(label => {
-      const ring = parseInt(label.dataset.ring);
-      const ringRadius = (CONFIG.coreRadius + ring * CONFIG.ringSpacing) / devicePixelRatio;
-      if (Math.abs(screenRadius - ringRadius) < 30) {
-        label.classList.add('active');
-        setTimeout(() => label.classList.remove('active'), 800);
-      }
-    });
+    if (viewState === 'overview') {
+      const screenRadius = p.radius / devicePixelRatio;
+      document.querySelectorAll('.industry-label').forEach(label => {
+        const ring = parseInt(label.dataset.ring);
+        const ringRadius = (CONFIG.coreRadius + ring * CONFIG.ringSpacing) / devicePixelRatio;
+        if (Math.abs(screenRadius - ringRadius) < 25) {
+          label.classList.add('active');
+          setTimeout(() => label.classList.remove('active'), 600);
+        }
+      });
+    }
 
-    // Update network node activation
+    // Network node activation
     for (const node of networkNodes) {
       const nx = cx + Math.cos(node.angle) * node.radius;
       const ny = cy + Math.sin(node.angle) * node.radius;
       const dist = Math.hypot(nx - p.x, ny - p.y);
       if (Math.abs(dist - p.radius) < 30) {
-        node.active = Math.min(1, node.active + 0.4 * p.life);
+        node.active = Math.min(1, node.active + 0.35 * p.life);
       }
     }
 
-    // Pulse ring
+    // Pulse ring visual
+    let pulseColor = '255, 58, 47';
+    if (focusRing >= 0) {
+      const col = SECTORS[focusRing].color;
+      pulseColor = `${col[0]}, ${col[1]}, ${col[2]}`;
+    }
+
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 58, 47, ${p.life * 0.25})`;
+    ctx.strokeStyle = `rgba(${pulseColor}, ${p.life * 0.2})`;
     ctx.lineWidth = 2 + p.life * 3;
     ctx.stroke();
 
-    // Secondary softer ring
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.radius * 0.95, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 107, 53, ${p.life * 0.08})`;
+    ctx.strokeStyle = `rgba(${pulseColor}, ${p.life * 0.06})`;
     ctx.lineWidth = 8;
     ctx.stroke();
   }
 
-  // Decay network activations
-  for (const node of networkNodes) {
-    node.active *= 0.97;
-  }
+  for (const node of networkNodes) { node.active *= 0.97; }
 }
 
-// === DRAW LADDER LOGIC HINT (subtle background pattern) ===
 function drawLadderPattern() {
-  const alpha = 0.015;
-  const spacing = 80;
+  const alpha = focusRing >= 0 ? 0.005 : 0.015;
   const railX1 = cx - 250;
   const railX2 = cx + 250;
   const startY = cy - 200;
+  const spacing = 80;
 
-  // Left rail
+  ctx.strokeStyle = `rgba(255, 58, 47, ${alpha})`;
+  ctx.lineWidth = 0.5;
+
   ctx.beginPath();
   ctx.moveTo(railX1, startY);
   ctx.lineTo(railX1, startY + spacing * 5);
-  ctx.strokeStyle = `rgba(255, 58, 47, ${alpha})`;
-  ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Right rail
   ctx.beginPath();
   ctx.moveTo(railX2, startY);
   ctx.lineTo(railX2, startY + spacing * 5);
-  ctx.strokeStyle = `rgba(255, 58, 47, ${alpha})`;
   ctx.stroke();
 
-  // Rungs with animated contacts
   for (let i = 0; i < 5; i++) {
     const y = startY + i * spacing;
     const contactOpen = Math.sin(time * 0.003 + i * 1.2) > 0.3;
@@ -551,27 +923,20 @@ function drawLadderPattern() {
       ctx.lineTo(railX2, y);
     }
     ctx.strokeStyle = `rgba(255, 58, 47, ${alpha * (contactOpen ? 2 : 1)})`;
-    ctx.lineWidth = 0.5;
     ctx.stroke();
   }
 }
 
-// === MOUSE INTERACTION ===
-document.addEventListener('mousemove', (e) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-});
-
-document.addEventListener('click', (e) => {
-  triggerPulse(e.clientX, e.clientY);
-});
-
 // === MAIN LOOP ===
 function animate() {
   time++;
+
+  // Smooth zoom
+  zoomProgress += (targetZoom - zoomProgress) * 0.06;
+
   ctx.clearRect(0, 0, W, H);
 
-  // Subtle vignette
+  // Vignette
   const vignette = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.7);
   vignette.addColorStop(0, 'rgba(7, 8, 10, 0)');
   vignette.addColorStop(0.7, 'rgba(7, 8, 10, 0.3)');
@@ -589,7 +954,6 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-// === INIT ===
 window.addEventListener('resize', resize);
 resize();
 animate();
